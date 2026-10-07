@@ -1,0 +1,39 @@
+name: Sync upstream
+
+on:
+  schedule:
+    # 09:17 Asia/Shanghai (UTC+8)
+    - cron: '17 1 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream-main
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'TT3301/jaychou123'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Merge upstream main into main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --method POST "repos/${GH_REPO}/merge-upstream" \
+            -H 'Accept: application/vnd.github+json' \
+            -f branch=main | tee /tmp/sync-result.json
+          {
+            echo '### Upstream sync'
+            echo 'Source: wliqi495-create/jaychou123 (main)'
+            echo 'Target: TT3301/jaychou123 (main)'
+            echo '```json'
+            cat /tmp/sync-result.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
